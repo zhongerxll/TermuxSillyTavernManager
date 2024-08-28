@@ -16,7 +16,7 @@ nc='\e[0m' # 没有颜色
 
 # 定义SillyTavern的安装路径
 SILLYTAVERN_DIR="$HOME/SillyTavern"
-script_version=1.0.0
+script_version=1.0.1
 
 # 显示菜单
 menu() {
@@ -234,7 +234,7 @@ update_script() {
 		read choise
 		if ! [[ "$choice" =~ ^[Nn]$ ]]; then
 			curl -Lo "$PREFIX/bin/TSTM" "$(curl -s --head --connect-timeout 3 http://www.google.com | grep "200" -q || echo "https://mirror.ghproxy.com/")https://raw.githubusercontent.com/zhongerxll/TermuxSillyTavernManager/main/TSTM" && chmod +x "$PREFIX/bin/TSTM" &&
-			echo "$lgreen更新成功" || echo "$lred更多失败"
+			echo -e "$lgreen更新成功" || echo -e "$lred更多失败"
 			read -n1
 			TSTM
 			exit
