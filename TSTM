@@ -177,10 +177,11 @@ update_sillytavern() {
     			echo -ne "$lyellow请输入分支的数字序号:$nc"
     			read choise
     			((choise--))
-    			if [ -n "${branch[choise]}" ]; then
+    			if [[ "$choise" =~ ^[0-9]+$ ]] && [ -n ${branch[choise]} ]; then
     				git -C "$SILLYTAVERN_DIR" switch ${branch[choise]}; git pull
     			else
     				echo -e "$lred无效选项，请重试。"
+    				read
     			fi
     		;;
     		0) return 0 ;;
