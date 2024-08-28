@@ -20,48 +20,53 @@ script_version=1.0.2
 
 # 显示菜单
 menu() {
-	local choise branch version
-	clear
-	if ! command -v git 1>/dev/null; then
-		change-repo-chinese
-		pkg i git -y
-	fi
-	if (git -C "$SILLYTAVERN_DIR" remote get-url origin 2>/dev/null | grep -q SillyTavern/SillyTavern); then
-		branch="$(git -C "$SILLYTAVERN_DIR" branch --show-current || echo "${lred}获取分支失败")"
-		version="$(awk -F '"' '/version/ {if ($4 != "") {found=$4}} END {if (found) print found; else exit 1}' "$SILLYTAVERN_DIR/package.json" || echo "$lred获取版本号失败")"
-	else
-		branch="$lred未安装"
-	fi
-	local choise
-	echo -e "$lcyan====================="
-	echo -e "SillyTavern 管理菜单"
-	echo -e "$cyan管理器版本:$lgreen $script_version"
-	echo -e "$cyan酒馆版本号:$lgreen $branch $version"
-	echo -e "$lcyan====================="
-	echo -e "${yellow}1. 启动酒馆"
-	echo -e "2. 安装酒馆"
-	echo -e "3. 酒馆版本管理"
-	echo -e "4. 检查管理菜单更新"
-	echo -e "${lred}5. 卸载酒馆"
-	echo -e "6. 卸载管理菜单"
-	echo -e "${lblue}0. 退出"
-	echo -e "${lcyan}====================="
-	echo -ne "$lyellow请选择操作[0-5]:"
-	read choice
-	case $choice in
-		1) start_sillytavern ;;
-		2) install_sillytavern ;;
-		3) update_sillytavern ;;
-		4) update_script ;;
-		5) uninstall_sillytavern ;;
-		6) uninstall_script ;;
-		0) exit 0 ;;
-		*) echo -e "${lred}无效选项，请重试。" ;;
-	esac
+	while :; do
+    	local choise branch version date sha
+    	clear
+    	if ! command -v git 1>/dev/null; then
+    		change-repo-chinese
+    		pkg i git -y
+    	fi
+    	if (git -C "$SILLYTAVERN_DIR" remote get-url origin | grep -q SillyTavern/SillyTavern); then
+        	branch="$lgreen$(git -C "$SILLYTAVERN_DIR" branch --show-current || echo "${lred}获取分支失败$nc")"
+        	version="$lgreen$(awk -F '"' '/version/ {if ($4 != "") {found=$4}} END {if (found) print found; else exit 1}' "$SILLYTAVERN_DIR/package.json" || echo "$lred获取版本号失败$nc")"
+        	date="$lgreen$(git -C "$SILLYTAVERN_DIR" log -1 --format=%cI | xargs -I {} date -d {} '+%Y-%m-%d %H:%M:%S' | grep -P ".+" || echo "$lred获取日期失败$nc")"
+        	sha="$lgreen$(git -C "$SILLYTAVERN_DIR" log -1 --format=%H | cut -c 1-7 | grep -P ".+" || echo "${lred}获取哈希失败$nc")"
+    	else
+    		branch="$lred未安装"
+    	fi
+    	local choise
+    	echo -e "$lcyan====================="
+    	echo -e "SillyTavern 管理菜单"
+    	echo -e "$cyan管理器版本:$lgreen $script_version"
+    	echo -e "$cyan酒馆版本号:$lgreen $branch $version $sha $date"
+    	echo -e "$lcyan====================="
+    	echo -e "${yellow}1. 启动酒馆"
+    	echo -e "2. 安装酒馆"
+    	echo -e "3. 酒馆版本管理"
+    	echo -e "4. 检查管理菜单更新"
+    	echo -e "${lred}5. 卸载酒馆"
+    	echo -e "6. 卸载管理菜单"
+    	echo -e "${lblue}0. 退出到终端命令行界面"
+    	echo -e "${lcyan}====================="
+    	echo -ne "$lyellow请选择操作[0-5]:"
+    	read choice
+    	case $choice in
+    		1) start_sillytavern ;;
+    		2) install_sillytavern ;;
+    		3) update_sillytavern ;;
+    		4) update_script ;;
+    		5) uninstall_sillytavern ;;
+    		6) uninstall_script ;;
+    		0) exit 0 ;;
+    		*) echo -e "${lred}无效选项，请重试。" ;;
+    	esac
+	done
 }
 
 # 启动 SillyTavern
 start_sillytavern() {
+	clear
 	local choise
 	if ! (git -C "$SILLYTAVERN_DIR" remote get-url origin | grep -q SillyTavern/SillyTavern); then
 		echo -e "${lred}SillyTavern 未安装。" 1>&2
@@ -75,10 +80,19 @@ start_sillytavern() {
 		fi
 	fi
 
+	echo -e "$lred***$lyellow输入1停止运行$lred***$nc"
 	echo -e "${lgreen}正在启动 SillyTavern...$nc" 
-	# echo -e "${lyellow}如要退出请使用ctrl+c$nc"
-	cd "$SILLYTAVERN_DIR"; bash ./start.sh &
-	sleep 3 && echo -e "$yellow输入任意按键停止" && read -n1 && pkill -f "node server.js"
+	cd "$SILLYTAVERN_DIR"
+	bash ./start.sh &
+	while :;do
+		read -n1 i
+		if [ "$i" = "1" ]; then
+			pkill -f "node server.js"
+			break
+		else
+			echo -e "$lred***$lyellow输入1停止运行$lred***$nc"
+		fi
+	done
 	}
 
 # 安装 SillyTavern
@@ -146,6 +160,7 @@ update_sillytavern() {
     	echo -e "$lcyan====================="
     	echo -e "${yellow}1. 更新酒馆"
     	echo -e "2. 切换分支"
+    	# echo -e "3. 重置修改过的文件（不包括数据）"
     	echo -e "${lblue}0. 返回"
     	echo -e "$lcyan====================="
     	echo -ne "$lyellow请选择操作[0-2]:"
@@ -259,6 +274,4 @@ change-repo-chinese() {
 }
 
 # 运行菜单
-while :; do
-	menu
-done
+menu
