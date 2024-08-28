@@ -16,10 +16,11 @@ nc='\e[0m' # 没有颜色
 
 # 定义SillyTavern的安装路径
 SILLYTAVERN_DIR="$HOME/SillyTavern"
+script_version=1.0.0
 
 # 显示菜单
 menu() {
-	local choise
+	local choise branch version
 	clear
 	if ! command -v git 1>/dev/null; then
 		change-repo-chinese
@@ -40,8 +41,9 @@ menu() {
 	echo -e "${yellow}1. 启动酒馆"
 	echo -e "2. 安装酒馆"
 	echo -e "3. 酒馆版本管理"
-	echo -e "${lred}4. 卸载酒馆"
-	echo -e "5. 卸载本脚本"
+	echo -e "4. 检查管理菜单更新"
+	echo -e "${lred}5. 卸载酒馆"
+	echo -e "6. 卸载管理菜单"
 	echo -e "${lblue}0. 退出"
 	echo -e "${lcyan}====================="
 	echo -ne "$lyellow请选择操作[0-5]:"
@@ -50,8 +52,9 @@ menu() {
 		1) start_sillytavern ;;
 		2) install_sillytavern ;;
 		3) update_sillytavern ;;
-		4) uninstall_sillytavern ;;
-		5) uninstall_script ;;
+		4) update_script ;;
+		5) uninstall_sillytavern ;;
+		6) uninstall_script ;;
 		0) exit 0 ;;
 		*) echo -e "${lred}无效选项，请重试。" ;;
 	esac
@@ -204,6 +207,42 @@ uninstall_script() {
     else
         echo -e "${red}卸载操作已取消。"
     fi
+}
+
+update_script() {
+	local mirror choise
+    compare_versions() {
+        local version1=(${1//./ })
+        local version2=(${2//./ })
+        for ((i=0; i<${#version1[@]}; i++)); do
+            if [[ ${version1[i]} -gt ${version2[i]} ]]; then
+                return 0
+            elif [[ ${version1[i]} -lt ${version2[i]} ]]; then
+                return 1
+            fi
+        done
+        return 1
+    }
+	mirror="$(curl -s --head --connect-timeout 3 http://www.google.com | grep "200" -q || echo "https://mirror.ghproxy.com/")"
+	new_script_version="$(curl -s --connect-timeout 3 "${mirror}https://raw.githubusercontent.com/zhongerxll/TermuxSillyTavernManager/main/version" || echo "$lred获取最新版本号失败")"
+	echo -e "$lcyan====================="
+	echo -e "$cyan最新版本: $lgreen$new_script_version"
+	echo -e "$cyan当前版本: $lgreen$script_version"
+	echo -e "$lcyan====================="
+	if compare_versions "$new_script_version" "$script_version"; then
+		echo -ne "$yellow检测到有更新，是否现在更新？[Y/n]:$nc"
+		read choise
+		if ! [[ "$choice" =~ ^[Nn]$ ]]; then
+			curl -Lo "$PREFIX/bin/TSTM" "$(curl -s --head --connect-timeout 3 http://www.google.com | grep "200" -q || echo "https://mirror.ghproxy.com/")https://raw.githubusercontent.com/zhongerxll/TermuxSillyTavernManager/main/TSTM" && chmod +x "$PREFIX/bin/TSTM" &&
+			echo "$lgreen更新成功" || echo "$lred更多失败"
+			read -n1
+			TSTM
+			exit
+		fi
+	else
+		echo -e "$red没有检测到更新，任意按键返回"
+		read -n1
+	fi
 }
 
 change-repo-chinese() {
