@@ -44,7 +44,7 @@ menu() {
 	echo -e "5. 卸载本脚本"
 	echo -e "${lblue}0. 退出"
 	echo -e "${lcyan}====================="
-	echo -ne "$lyellow请选择操作[0-7]:"
+	echo -ne "$lyellow请选择操作[0-5]:"
 	read choice
 	case $choice in
 		1) start_sillytavern ;;
