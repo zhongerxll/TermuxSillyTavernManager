@@ -16,7 +16,7 @@ nc='\e[0m' # 没有颜色
 
 # 定义SillyTavern的安装路径
 SILLYTAVERN_DIR="$HOME/SillyTavern"
-script_version=1.0.1
+script_version=1.0.2
 
 # 显示菜单
 menu() {
@@ -35,7 +35,7 @@ menu() {
 	local choise
 	echo -e "$lcyan====================="
 	echo -e "SillyTavern 管理菜单"
-	echo -e "$cyan管理器版本:$lgreen 1.0.0"
+	echo -e "$cyan管理器版本:$lgreen $script_version"
 	echo -e "$cyan酒馆版本号:$lgreen $branch $version"
 	echo -e "$lcyan====================="
 	echo -e "${yellow}1. 启动酒馆"
@@ -75,11 +75,11 @@ start_sillytavern() {
 		fi
 	fi
 
-	echo -e "${lgreen}正在启动 SillyTavern..."
-	echo -e "${lyellow}如要退出请使用ctrl+c$nc"
-	cd "$SILLYTAVERN_DIR"
-	./start.sh
-}
+	echo -e "${lgreen}正在启动 SillyTavern...$nc" 
+	# echo -e "${lyellow}如要退出请使用ctrl+c$nc"
+	cd "$SILLYTAVERN_DIR"; bash ./start.sh &
+	sleep 3 && echo -e "$yellow输入任意按键停止" && read -n1 && pkill -f "node server.js"
+	}
 
 # 安装 SillyTavern
 install_sillytavern() {
