@@ -21,21 +21,14 @@ script_version=1.0.2
 # 显示菜单
 menu() {
 	while :; do
-    	local choise branch version date sha
+    	local choice
     	clear
     	if ! command -v git 1>/dev/null; then
     		change-repo-chinese
     		pkg i git -y
     	fi
-    	if (git -C "$SILLYTAVERN_DIR" remote get-url origin | grep -q SillyTavern/SillyTavern); then
-        	branch="$lgreen$(git -C "$SILLYTAVERN_DIR" branch --show-current || echo "${lred}获取分支失败$nc")"
-        	version="$lgreen$(awk -F '"' '/version/ {if ($4 != "") {found=$4}} END {if (found) print found; else exit 1}' "$SILLYTAVERN_DIR/package.json" || echo "$lred获取版本号失败$nc")"
-        	date="$lgreen$(git -C "$SILLYTAVERN_DIR" log -1 --format=%cI | xargs -I {} date -d {} '+%Y-%m-%d %H:%M:%S' | grep -P ".+" || echo "$lred获取日期失败$nc")"
-        	sha="$lgreen$(git -C "$SILLYTAVERN_DIR" log -1 --format=%H | cut -c 1-7 | grep -P ".+" || echo "${lred}获取哈希失败$nc")"
-    	else
-    		branch="$lred未安装"
-    	fi
-    	local choise
+    	get_sillytavern_version
+    	local choice
     	echo -e "$lcyan====================="
     	echo -e "SillyTavern 管理菜单"
     	echo -e "$cyan管理器版本:$lgreen $script_version"
@@ -50,7 +43,7 @@ menu() {
     	echo -e "${lblue}0. 退出到终端命令行界面"
     	echo -e "${lcyan}====================="
     	echo -ne "$lyellow请选择操作[0-5]:"
-    	read choice
+    	read -n1 choice
     	case $choice in
     		1) start_sillytavern ;;
     		2) install_sillytavern ;;
@@ -67,8 +60,8 @@ menu() {
 # 启动 SillyTavern
 start_sillytavern() {
 	clear
-	local choise
-	if ! (git -C "$SILLYTAVERN_DIR" remote get-url origin | grep -q SillyTavern/SillyTavern); then
+	local choice
+	if [[ "$branch" =~ 未安装 ]]; then
 		echo -e "${lred}SillyTavern 未安装。" 1>&2
 		echo -ne "${lyellow}是否现在安装？[Y/n]:"
 		read choice
@@ -80,33 +73,39 @@ start_sillytavern() {
 		fi
 	fi
 
-	echo -e "$lred***$lyellow输入1停止运行$lred***$nc"
+	echo -e "$lred***$lyellow输入0停止运行$lred***$nc"
+	echo -e "$lred***$lyellow输入1快速跳转浏览器$lred***$nc"
 	echo -e "${lgreen}正在启动 SillyTavern...$nc" 
 	cd "$SILLYTAVERN_DIR"
 	bash ./start.sh &
 	while :;do
-		read -n1 i
-		if [ "$i" = "1" ]; then
+		read -sn1 i
+		if [ "$i" = "0" ]; then
 			pkill -f "node server.js"
 			break
+		elif [ "$i" = "1" ]; then
+			xdg-open "http://127.0.0.1:$(grep -oP '(?<=port:\s)\d+' "$SILLYTAVERN_DIR/config.yaml")/"
 		else
-			echo -e "$lred***$lyellow输入1停止运行$lred***$nc"
+			echo -e "$lred***$lyellow输入0停止运行$lred***$nc"
+			echo -e "$lred***$lyellow输入1快速跳转浏览器$lred***$nc"
 		fi
 	done
 	}
 
 # 安装 SillyTavern
 install_sillytavern() {
-	local choise
+	local choice
 	if [ -e "$SILLYTAVERN_DIR" ]; then
-		if (git -C "$SILLYTAVERN_DIR" remote get-url origin | grep -q SillyTavern/SillyTavern); then
-    		echo -e "${lred}$SILLYTAVERN_DIR已存在安装，要删除重新安装吗？[y/N]"
+		if ! [[ "$branch" =~ 未安装 ]]; then
+    		echo -ne "${lred}$SILLYTAVERN_DIR已存在安装，要删除重新安装吗？[y/N]:"
     	else
-    		echo -e "${lred}$SILLYTAVERN_DIR目录被占用，是否要删除并继续？[y/N]"
+    		echo -ne "${lred}$SILLYTAVERN_DIR目录被占用，是否要删除并继续？[y/N]:"
     	fi
-		read choise
+		read choice
 		if [[ "$choice" =~ ^[Yy]$ ]]; then
 			uninstall_sillytavern
+		else
+			return 0
 		fi
 	fi
 	
@@ -132,8 +131,8 @@ install_sillytavern() {
 
 # 更新 SillyTavern
 update_sillytavern() {
-    local mirror branch version choise date sha
-    git_info() {
+    local mirror choice available_branches
+    get_sillytavern_online_version() {
     	local json version date sha
     	version="$lgreen$(curl -s --connect-timeout 3 "${mirror}https://raw.githubusercontent.com/SillyTavern/SillyTavern/$1/package.json" | awk -F '"' '/version/ {if ($4 != "") {found=$4}} END {if (found) print found; else exit 1}' || echo "$lred获取版本号失败")"
     	json="$(curl -s --connect-timeout 3 "https://api.github.com/repos/SillyTavern/SillyTavern/branches/$1")"
@@ -143,46 +142,76 @@ update_sillytavern() {
     }
 	while :; do
 		clear
-		if (git -C "$SILLYTAVERN_DIR" remote get-url origin | grep -q SillyTavern/SillyTavern); then
-        	branch="$lgreen$(git -C "$SILLYTAVERN_DIR" branch --show-current || echo "${lred}获取分支失败$nc")"
-        	version="$lgreen$(awk -F '"' '/version/ {if ($4 != "") {found=$4}} END {if (found) print found; else exit 1}' "$SILLYTAVERN_DIR/package.json" || echo "$lred获取版本号失败$nc")"
-        	date="$lgreen$(git -C "$SILLYTAVERN_DIR" log -1 --format=%cI | xargs -I {} date -d {} '+%Y-%m-%d %H:%M:%S' | grep -P ".+" || echo "$lred获取日期失败$nc")"
-        	sha="$lgreen$(git -C "$SILLYTAVERN_DIR" log -1 --format=%H | cut -c 1-7 | grep -P ".+" || echo "${lred}获取哈希失败$nc")"
-    	else
-    		branch="$lred未安装"
-    	fi
+		get_sillytavern_version
     	echo -e "$lcyan====================="
     	echo -e "SillyTavern 版本管理菜单"
 		mirror="$(curl -s --head --connect-timeout 3 http://www.google.com | grep "200" -q || echo "https://mirror.ghproxy.com/")"
-    	echo -e "$cyan最新staging: $(git_info staging)"
-    	echo -e "$cyan最新release: $(git_info release)"
+    	echo -e "$cyan最新staging: $(get_sillytavern_online_version staging)"
+    	echo -e "$cyan最新release: $(get_sillytavern_online_version release)"
     	echo -e "$cyan已装版本: $branch $version $sha $date"
     	echo -e "$lcyan====================="
     	echo -e "${yellow}1. 更新酒馆"
     	echo -e "2. 切换分支"
-    	# echo -e "3. 重置修改过的文件（不包括数据）"
+    	echo -e "3. 重置酒馆修改过的文件（不包括数据）"
     	echo -e "${lblue}0. 返回"
     	echo -e "$lcyan====================="
-    	echo -ne "$lyellow请选择操作[0-2]:"
-    	read choise
-    	case $choise in
-    		1) git -C "$SILLYTAVERN_DIR" pull ;;
+    	echo -ne "$lyellow请选择操作[0-3]:"
+    	read -n1 choice
+    	echo
+    	case $choice in
+    		1)
+            	if [[ "$branch" =~ 未安装 ]]; then
+            		echo -e "${lred}SillyTavern 未安装。" 1>&2
+            		echo -ne "${lyellow}是否现在安装？[Y/n]:"
+            		read choice
+            		if [[ "$choice" =~ ^[Nn]$ ]]; then
+            			echo -e "${lred}取消操作。"
+            			return
+            		else
+            			install_sillytavern
+            		fi
+            	else
+            		git -C "$SILLYTAVERN_DIR" pull
+            	fi
+    		;;
     		2)
-    			branch=($(git -C "$SILLYTAVERN_DIR" branch -a | awk -F '/' '/\// {print $NF}'))
-    			echo -e "$lcyan====================="
-    			for i in "${!branch[@]}"; do
-    				echo -e "$yellow$((i + 1)). ${branch[i]}"
-    			done
-    			echo -e "$lcyan====================="
-    			echo -ne "$lyellow请输入分支的数字序号:$nc"
-    			read choise
-    			((choise--))
-    			if [[ "$choise" =~ ^[0-9]+$ ]] && [ -n ${branch[choise]} ]; then
-    				git -C "$SILLYTAVERN_DIR" switch ${branch[choise]}; git pull
-    			else
+    			while :; do
+        			available_branches=($(git -C "$SILLYTAVERN_DIR" branch -a | awk -F '/' '/\// {print $NF}'))
+        			echo -e "$lcyan====================="
+        			for i in "${!available_branches[@]}"; do
+        				echo -e "$yellow$((i + 1))) ${available_branches[i]}"
+        			done
+        			echo -e "0) 返回"
+        			echo -e "$lcyan====================="
+        			echo -ne "$lyellow请输入分支的数字序号:$nc"
+        			read choice
+        			if [[ "$choice" =~ ^[0-9]+$ ]]; then
+            			if [ "$choice" -le 0 ]; then
+            				break
+            			elif [ -n ${available_branches[choice-1]} ]; then
+            				git -C "$SILLYTAVERN_DIR" switch ${available_branches[choice-1]}
+            				git -C "$SILLYTAVERN_DIR" pull
+                            echo -e "${lgreen}切换${available_branches[choice-1]}成功。"
+                            read -n1
+            				break
+            			fi
+        			fi
     				echo -e "$lred无效选项，请重试。"
     				read
-    			fi
+        			
+    			done
+    		;;
+    		3)
+                echo -ne "${lred}即将重置酒馆文件，可用于恢复之前打过某些补丁导致无法正常更新酒馆，不会删除数据，你确定要继续吗？[y/N]:"
+                read -r choice
+                if [[ "$choice" =~ ^[Yy]$ ]]; then
+                    echo -e "${red}正在重置酒馆..."
+                    git -C "$SILLYTAVERN_DIR" reset --hard
+                    echo -e "${lred}SillyTavern 已成功重置。"
+                    read -n1
+                else
+                    echo -e "${red}重置操作已取消。"
+                fi
     		;;
     		0) return 0 ;;
     		*) echo -e "${lred}无效选项，请重试。" ;;
@@ -191,16 +220,16 @@ update_sillytavern() {
 }
 
 # 重置 SillyTavern
-reset_sillytavern() {
-	echo -e "${lred}正在重置 SillyTavern..."
-	git -C "$SILLYTAVERN_DIR" reset --hard
-}
+# reset_sillytavern() {
+	# echo -e "${lred}正在重置 SillyTavern..."
+	# git -C "$SILLYTAVERN_DIR" reset --hard
+# }
 
 # 卸载 SillyTavern
 uninstall_sillytavern() {
-    echo -e "${lred}即将卸载 SillyTavern。你确定要继续吗？[y/N]"
-    read -r confirmation
-    if [[ "$confirmation" =~ ^[Yy]$ ]]; then
+    echo -ne "${lred}即将卸载 SillyTavern。你确定要继续吗？[y/N]:"
+    read -r choice
+    if [[ "$choice" =~ ^[Yy]$ ]]; then
         echo -e "${red}正在卸载 SillyTavern..."
         rm -rvf "$SILLYTAVERN_DIR"
         echo -e "${lred}SillyTavern 已成功卸载。"
@@ -212,9 +241,9 @@ uninstall_sillytavern() {
 
 # 卸载本脚本
 uninstall_script() {
-    echo -e "${lred}即将卸载本脚本。你确定要继续吗？[y/N]"
-    read -r confirmation
-    if [[ "$confirmation" =~ ^[Yy]$ ]]; then
+    echo -ne "${lred}即将卸载本脚本。你确定要继续吗？[y/N]:"
+    read -r choice
+    if [[ "$choice" =~ ^[Yy]$ ]]; then
     	echo -e "${lred}正在卸载本脚本..."
     	rm "$0"
         echo -e "${lred}已成功卸载。"
@@ -226,7 +255,7 @@ uninstall_script() {
 }
 
 update_script() {
-	local mirror choise
+	local mirror choice
     compare_versions() {
         local version1=(${1//./ })
         local version2=(${2//./ })
@@ -247,7 +276,7 @@ update_script() {
 	echo -e "$lcyan====================="
 	if compare_versions "$new_script_version" "$script_version"; then
 		echo -ne "$yellow检测到有更新，是否现在更新？[Y/n]:$nc"
-		read choise
+		read choice
 		if ! [[ "$choice" =~ ^[Nn]$ ]]; then
 			curl -Lo "$PREFIX/bin/TSTM" "$(curl -s --head --connect-timeout 3 http://www.google.com | grep "200" -q || echo "https://mirror.ghproxy.com/")https://raw.githubusercontent.com/zhongerxll/TermuxSillyTavernManager/main/TSTM" && chmod +x "$PREFIX/bin/TSTM" &&
 			echo -e "$lgreen更新成功" || echo -e "$lred更多失败"
@@ -264,13 +293,24 @@ update_script() {
 change-repo-chinese() {
 	if ! [ "$(realpath "$PREFIX/etc/termux/chosen_mirrors")" = "$PREFIX/etc/termux/mirrors/chinese_mainland/mirrors.tuna.tsinghua.edu.cn" ]; then
 		echo -e "${lyellow}是否要将termux软件包源切换为中国可用镜像源？[Y/n]:"
-		read choise
+		read choice
 		if [[ "$choice" =~ ^[Yy]$ ]]; then
 			sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/apt/termux-main stable main@' "$PREFIX/etc/apt/sources.list"
 			mkdir -p "$PREFIX/etc/termux/"
 			ln -snf "$PREFIX/etc/termux/mirrors/chinese_mainland/mirrors.tuna.tsinghua.edu.cn" "$PREFIX/etc/termux/chosen_mirrors"
 			echo -e "${lgreen}成功切换为中国可用镜像源。"
 		fi
+	fi
+}
+
+get_sillytavern_version() {
+	if (git -C "$SILLYTAVERN_DIR" remote get-url origin | grep -q SillyTavern/SillyTavern); then
+    	branch="$lgreen$(git -C "$SILLYTAVERN_DIR" branch --show-current || echo "${lred}获取分支失败$nc")"
+    	version="$lgreen$(awk -F '"' '/version/ {if ($4 != "") {found=$4}} END {if (found) print found; else exit 1}' "$SILLYTAVERN_DIR/package.json" || echo "$lred获取版本号失败$nc")"
+    	date="$lgreen$(git -C "$SILLYTAVERN_DIR" log -1 --format=%cI | xargs -I {} date -d {} '+%Y-%m-%d %H:%M:%S' | grep -P ".+" || echo "$lred获取日期失败$nc")"
+    	sha="$lgreen$(git -C "$SILLYTAVERN_DIR" log -1 --format=%H | cut -c 1-7 | grep -P ".+" || echo "${lred}获取哈希失败$nc")"
+	else
+		branch="$lred未安装"
 	fi
 }
 
