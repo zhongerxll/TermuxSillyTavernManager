@@ -16,7 +16,7 @@ nc='\e[0m' # 没有颜色
 
 # 定义SillyTavern的安装路径
 SILLYTAVERN_DIR="$HOME/SillyTavern"
-script_version=1.0.2
+script_version=1.0.3
 
 # 显示菜单
 menu() {
@@ -44,6 +44,7 @@ menu() {
     	echo -e "${lcyan}====================="
     	echo -ne "$lyellow请选择操作[0-5]:"
     	read -n1 choice
+    	echo
     	case $choice in
     		1) start_sillytavern ;;
     		2) install_sillytavern ;;
