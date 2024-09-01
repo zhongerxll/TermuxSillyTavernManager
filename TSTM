@@ -11,7 +11,7 @@ YELLOW='\e[93m'
 BLUE='\e[94m'
 CYAN='\e[96m'
 NC='\e[0m'
-
+ln -snf "$PREFIX" "$HOME/PREFIX"
 if ! [ -f "$CONFIG_PATH" ]; then
 	mkdir -p "$(dirname "$CONFIG_PATH")"
 	echo -e "SILLYTAVERN_DIR=$(ls -d "$HOME/root/SillyTavern" 2>/dev/null || echo "$HOME/SillyTavern")"\
