@@ -15,7 +15,7 @@ NC='\e[0m'
 if ! [ -f "$CONFIG_PATH" ]; then
 	mkdir -p "$(dirname "$CONFIG_PATH")"
 	echo -e "SILLYTAVERN_DIR=$(ls -d "$HOME/root/SillyTavern" 2>/dev/null || echo "$HOME/SillyTavern")"\
-		'\nAUTO_BACKUP=1'\
+		'\nAUTO_BACKUP=0'\
 		'\nBACKUP_DIR=$PREFIX/opt/TSTM/backup'\
 		> "$CONFIG_PATH"
 fi
