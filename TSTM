@@ -417,7 +417,6 @@ sillytavern_backup_manager() {
 							mv -v "${backup_array[choice-1]}/plugins" "$SILLYTAVERN_DIR/plugins"
 							echo -e "${GREEN}恢复$GREEN$(basename "${backup_array[i]}")成功。"
 							read -n1
-							break
 						else
 							echo -e "$RED无效选项，请重试。"
 						fi
@@ -447,7 +446,6 @@ sillytavern_backup_manager() {
 								rm -rf "${backup_array[i]}"
 								echo -e "${RED}已成功删除。"
 								read -n1
-								exit 0
 							else
 								echo -e "${RED}操作取消。"
 							fi
