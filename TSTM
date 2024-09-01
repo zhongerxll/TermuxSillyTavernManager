@@ -60,7 +60,7 @@ menu() {
 
 start_sillytavern() {
 	clear
-	local choice date
+	local choice date backup_array
 	if [[ "$branch" =~ 未安装 ]]; then
 		echo -e "${RED}SillyTavern 未安装。" 1>&2
 		echo -ne "${YELLOW}是否现在安装？[Y/n]:$NC"
@@ -85,6 +85,8 @@ start_sillytavern() {
 			pkill -f "node server.js"
 			if [ "$AUTO_BACKUP" = 1 ]; then
 				echo -e "$YELLOW正在备份...$NC"
+				backup_array=($(find "$BACKUP_DIR" -mindepth 1 -maxdepth 1 -type d | sort -r))
+				test "$backup_array" -gt 10 && rm -rf "${backup_array[-1]}"
 				date="$(date '+%Y%m%d%H%M%S')"
 				mkdir -p "$BACKUP_DIR/$date"
 				cp -rv "$SILLYTAVERN_DIR/data" "$BACKUP_DIR/$date/data"
