@@ -29,6 +29,10 @@ menu() {
 			change-repo-chinese
 			pkg i git -y
 		fi
+		if ! command -v jq 1>/dev/null; then
+			change-repo-chinese
+			pkg i jq -y
+		fi
 		get_sillytavern_version
 		echo -e "$CYAN====================="
 		echo -e "SillyTavern 管理菜单"
