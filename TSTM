@@ -2,7 +2,7 @@
 
 set -e
 
-SCRIPT_VERSION=1.0.4
+SCRIPT_VERSION=1.0.5
 CONFIG_PATH="$PREFIX/opt/TSTM/config.conf"
 
 RED='\e[91m'
