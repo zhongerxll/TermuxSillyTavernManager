@@ -169,9 +169,9 @@ sillytavern_version_manager() {
 		echo -e "${CYAN}4. $GREEN修改酒馆路径"
 		echo -e "${CYAN}5. $RED重置酒馆修改过的文件（不包括数据）"
 		echo -e "${CYAN}6. $RED卸载酒馆"
-		echo -e "${CYAN}1. $BLUE返回"
+		echo -e "${CYAN}0. $BLUE返回"
 		echo -e "$CYAN====================="
-		echo -ne "$YELLOW请选择操作[0-5]:$NC"
+		echo -ne "$YELLOW请选择操作[0-6]:$NC"
 		read -n1 choice
 		echo
 		case $choice in
