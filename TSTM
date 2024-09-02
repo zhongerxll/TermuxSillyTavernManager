@@ -2,7 +2,7 @@
 
 set -e
 
-SCRIPT_VERSION=1.0.7
+SCRIPT_VERSION=1.0.8
 CONFIG_PATH="$PREFIX/opt/TSTM/config.conf"
 
 RED='\e[91m'
@@ -346,7 +346,7 @@ change-repo-chinese() {
 	if ! [ "$(realpath "$PREFIX/etc/termux/chosen_mirrors")" = "$PREFIX/etc/termux/mirrors/chinese_mainland/mirrors.tuna.tsinghua.edu.cn" ]; then
 		echo -e "${YELLOW}是否要将termux软件包源切换为中国可用镜像源？[Y/n]:$NC"
 		read choice
-		if [[ "$choice" =~ ^[Nn]$ ]]; then
+		if ! [[ "$choice" =~ ^[Nn]$ ]]; then
 			sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/apt/termux-main stable main@' "$PREFIX/etc/apt/sources.list"
 			mkdir -p "$PREFIX/etc/termux/"
 			ln -snf "$PREFIX/etc/termux/mirrors/chinese_mainland/mirrors.tuna.tsinghua.edu.cn" "$PREFIX/etc/termux/chosen_mirrors"
