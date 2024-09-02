@@ -27,11 +27,11 @@ menu() {
 		clear
 		if ! command -v git 1>/dev/null; then
 			change-repo-chinese
-			pkg i git -y
+			pkg i git jq -y
 		fi
 		if ! command -v jq 1>/dev/null; then
 			change-repo-chinese
-			pkg i jq -y
+			pkg i jq git -y
 		fi
 		get_sillytavern_version
 		echo -e "$CYAN====================="
